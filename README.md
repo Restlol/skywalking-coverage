@@ -1,3 +1,31 @@
+Change Log
+==========
+This project provides JaCoCo-based code coverage support for Apache SkyWalking 8.0.1, built on JDK 8, to enable runtime coverage collection and export functionality.  
+
+The primary logic of the code modifications resides in the `apm-agent-core` and `apm-agent` packages.  
+
+**how to build**  
+```
+git clone
+cd skywalking
+git submodule init
+git submodule update
+./mvnw clean package -DskipTests  -Dcheckstyle.skip=true     
+```
+
+**how to use**  
+
+To enable the functionality, you must append the scanPackage and openJacoco parameters when starting the agent. If these parameters are not used, the agent’s original functionality remains unaffected. However, both parameters must be specified together for the feature to take effect.
+
+Parameter Details:  
+`scanPackage`: The package name(s) for which code coverage will be collected. This applies to all class files within the specified package.
+`openJacoco`: A boolean flag to enable/disable the feature (valid values: true | false).
+
+Example Usage:
+
+`java -javaagent:path/to/skywalking-agent.jar=agent.service_name=YourServiceName,scanPackage=com.your.package,openJacoco=true -jar your-application.jar
+`
+
 Apache SkyWalking
 ==========
 
