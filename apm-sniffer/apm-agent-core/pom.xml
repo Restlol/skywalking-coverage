@@ -50,9 +50,23 @@
         <shade.io.perfmark.source>io.perfmark</shade.io.perfmark.source>
         <shade.io.perfmark.target>${shade.package}.${shade.io.perfmark.source}</shade.io.perfmark.target>
         <ststem-rules.version>1.18.0</ststem-rules.version>
+        <!-- jacoco -->
+        <shade.org.jacoco.source>org.jacoco</shade.org.jacoco.source>
+        <shade.org.jacoco.target>${shade.package}.${shade.org.jacoco.source}</shade.org.jacoco.target>
+        <jacoco.version>0.8.8</jacoco.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.jacoco</groupId>
+            <artifactId>org.jacoco.core</artifactId>
+            <version>${jacoco.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jacoco</groupId>
+            <artifactId>org.jacoco.cli</artifactId>
+            <version>${jacoco.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.skywalking</groupId>
             <artifactId>apm-network</artifactId>
@@ -169,6 +183,10 @@
                                 <relocation>
                                     <pattern>${shade.io.perfmark.source}</pattern>
                                     <shadedPattern>${shade.io.perfmark.target}</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>${shade.org.jacoco.source}</pattern>
+                                    <shadedPattern>${shade.org.jacoco.target}</shadedPattern>
                                 </relocation>
                             </relocations>
                             <filters>

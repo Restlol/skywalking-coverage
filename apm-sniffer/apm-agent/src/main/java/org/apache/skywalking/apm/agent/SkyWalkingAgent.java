@@ -18,6 +18,10 @@
 
 package org.apache.skywalking.apm.agent;
 
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.instrument.Instrumentation;
 import java.util.List;
 import net.bytebuddy.ByteBuddy;
@@ -33,6 +37,11 @@ import org.apache.skywalking.apm.agent.core.boot.AgentPackageNotFoundException;
 import org.apache.skywalking.apm.agent.core.boot.ServiceManager;
 import org.apache.skywalking.apm.agent.core.conf.Config;
 import org.apache.skywalking.apm.agent.core.conf.SnifferConfigInitializer;
+import org.apache.skywalking.apm.agent.core.jacoco.CoverageExportHook;
+import org.apache.skywalking.apm.agent.core.jacoco.JacocoArgumentsHolder;
+import org.apache.skywalking.apm.agent.core.jacoco.JacocoCenter;
+import org.apache.skywalking.apm.agent.core.jacoco.JacocoInst;
+import org.apache.skywalking.apm.agent.core.jacoco.cli.JacocoSnifferConfigInitializer;
 import org.apache.skywalking.apm.agent.core.logging.api.ILog;
 import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
 import org.apache.skywalking.apm.agent.core.plugin.AbstractClassEnhancePluginDefine;
@@ -43,7 +52,10 @@ import org.apache.skywalking.apm.agent.core.plugin.PluginException;
 import org.apache.skywalking.apm.agent.core.plugin.PluginFinder;
 import org.apache.skywalking.apm.agent.core.plugin.bootstrap.BootstrapInstrumentBoost;
 import org.apache.skywalking.apm.agent.core.plugin.jdk9module.JDK9ModuleExporter;
-
+import org.apache.skywalking.apm.util.StringUtil;
+import org.jacoco.core.data.ExecutionDataStore;
+import org.jacoco.core.data.ExecutionDataWriter;
+import org.jacoco.core.data.SessionInfoStore;
 import static net.bytebuddy.matcher.ElementMatchers.nameContains;
 import static net.bytebuddy.matcher.ElementMatchers.nameStartsWith;
 import static net.bytebuddy.matcher.ElementMatchers.not;
@@ -58,6 +70,13 @@ public class SkyWalkingAgent {
      * Main entrance. Use byte-buddy transform to enhance all classes, which define in plugins.
      */
     public static void premain(String agentArgs, Instrumentation instrumentation) throws PluginException {
+        try {
+            JacocoSnifferConfigInitializer.initializeCoreConfig(agentArgs);
+            JacocoCenter.INSTANCE.getCoverage().useJacoco(instrumentation);
+        }catch (Exception e){
+            logger.error(e, "jacoco initialized failure.ignore and continue");
+        }
+
         final PluginFinder pluginFinder;
         try {
             SnifferConfigInitializer.initialize(agentArgs);
@@ -113,6 +132,9 @@ public class SkyWalkingAgent {
 
         Runtime.getRuntime()
                .addShutdownHook(new Thread(ServiceManager.INSTANCE::shutdown, "skywalking service shutdown thread"));
+        if(JacocoCenter.INSTANCE.outputCoverageFile()){
+            Runtime.getRuntime().addShutdownHook(new CoverageExportHook("export coverage file thread"));
+        }
     }
 
     private static class Transformer implements AgentBuilder.Transformer {
