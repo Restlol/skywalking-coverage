@@ -1,30 +1,108 @@
-Change Log
-==========
-This project provides JaCoCo-based code coverage support for Apache SkyWalking 8.0.1, built on JDK 8, to enable runtime coverage collection and export functionality.  
+# SkyWalking Coverage
 
-The primary logic of the code modifications resides in the `apm-agent-core` and `apm-agent` packages.  
+This project extends Apache SkyWalking 8.0.1 with JaCoCo-based code coverage support, enabling runtime coverage collection and export functionality.  
+It is built and tested with JDK 8.
 
-**how to build**  
-```
-git clone
+The core implementation is located in the following modules:
+
+- `apm-agent-core`
+- `apm-agent`
+
+---
+
+## Build
+
+```bash
+git clone <this-repo>
 cd skywalking
 git submodule init
 git submodule update
-./mvnw clean package -DskipTests  -Dcheckstyle.skip=true     
+./mvnw clean package -DskipTests -Dcheckstyle.skip=true
 ```
 
-**how to use**  
+---
 
-To enable the functionality, you must append the scanPackage and openJacoco parameters when starting the agent. If these parameters are not used, the agent’s original functionality remains unaffected. However, both parameters must be specified together for the feature to take effect.
+## Usage
 
-Parameter Details:  
-`scanPackage`: The package name(s) for which code coverage will be collected. This applies to all class files within the specified package.
-`openJacoco`: A boolean flag to enable/disable the feature (valid values: true | false).
+To enable coverage collection, you must specify both `scanPackage` and `openJacoco` when starting the agent.
 
-Example Usage:
+If these parameters are not provided, the agent behaves exactly like the original Apache SkyWalking agent.
 
-`java -javaagent:path/to/skywalking-agent.jar=agent.service_name=YourServiceName,scanPackage=com.your.package,openJacoco=true -jar your-application.jar
-`
+### Parameters
+
+| Parameter      | Description |
+|---------------|------------|
+| `scanPackage` | Package(s) to be instrumented for coverage. All classes under the specified package will be included. |
+| `openJacoco`  | Enables or disables coverage collection (`true` or `false`). |
+
+### Example
+
+```bash
+java -javaagent:/path/to/skywalking-agent.jar=agent.service_name=YourServiceName,scanPackage=com.your.package,openJacoco=true \
+     -jar your-application.jar
+```
+
+---
+
+## How to View Coverage Data
+
+The JaCoCo coverage file is written to the application working directory via a shutdown hook when the application terminates.  
+The generated file is named:
+
+```
+coverage.exec
+```
+
+> ⚠️ Currently, only shutdown-triggered export is supported.  
+> Exporting coverage data via an HTTP endpoint can be easily added.
+
+---
+
+## Generate Coverage Report
+
+Use the JaCoCo CLI tool to generate reports from the `.exec` file:
+
+```bash
+java -jar jacococli.jar report coverage.exec \
+  --classfiles target/classes \
+  --sourcefiles src/main/java \
+  --html report
+```
+
+After execution, open:
+
+```
+report/index.html
+```
+
+---
+
+## Architecture
+
+This project integrates JaCoCo into the SkyWalking agent to collect runtime coverage data.
+
+### Key Components
+
+- **JacocoInst**: Initializes JaCoCo instrumentation at agent startup  
+- **JacocoCoverageTransformer**: Enhances class bytecode for coverage tracking  
+- **JacocoCenter**: Manages runtime coverage data  
+- **CoverageExportHook**: Exports coverage data during JVM shutdown  
+- **CLI / Arguments Parser**: Handles custom agent parameters  
+
+### Workflow
+
+1. Agent starts with JaCoCo enabled  
+2. Classes under `scanPackage` are instrumented  
+3. Coverage data is collected during runtime  
+4. On JVM shutdown, coverage data is dumped to `coverage.exec`  
+
+---
+
+## Limitations
+
+- Only shutdown-triggered coverage export is currently supported  
+- No built-in HTTP export endpoint yet  
+- Coverage is limited to specified `scanPackage`
 
 Apache SkyWalking
 ==========
